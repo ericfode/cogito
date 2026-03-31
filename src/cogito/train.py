@@ -145,7 +145,8 @@ def train_reasoner(
     if avg_val < best_val_loss:
       best_val_loss = avg_val
       patience_counter = 0
-      state = {k: v.numpy() for k, v in get_state_dict_from_obj(reasoner).items()}
+      from tinygrad.nn.state import get_state_dict
+      state = {k: v.numpy() for k, v in get_state_dict(reasoner).items()}
       np.savez(f"{save_dir}/best_reasoner.npz", **state)
     else:
       patience_counter += 1

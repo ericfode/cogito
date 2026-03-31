@@ -120,6 +120,7 @@ def cmd_eval(args):
   opt = AdamW(get_parameters(linear), lr=1e-3)
   train_starts = Tensor(h_starts[:-n_test].astype(np.float32))
   train_ends = Tensor(h_ends[:-n_test].astype(np.float32))
+  Tensor.training = True
   for ep in range(50):
     h_pred = linear(train_starts)
     loss = loss_fn(h_pred, train_ends)
@@ -128,6 +129,7 @@ def cmd_eval(args):
     opt.step()
     if (ep + 1) % 10 == 0:
       print(f"  Linear ep {ep+1}: loss={loss.numpy().item():.4f}")
+  Tensor.training = False
 
   linear_pred = linear(test_starts)
   cos_linear = cosine_similarity(linear_pred, test_ends).mean().numpy().item()
