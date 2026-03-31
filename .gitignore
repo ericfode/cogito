@@ -1,0 +1,15 @@
+.runtime/
+.claude/
+.logs/
+__pycache__/
+state.json
+CLAUDE.md
+CLAUDE.local.md
+.venv/
+data/
+checkpoints/
+*.npy
+*.npz
+wandb/
+.env
+.local/
