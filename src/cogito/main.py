@@ -8,18 +8,39 @@ Usage:
 """
 import argparse, os, sys
 import numpy as np
+
+# Patch tinygrad's disk backend to skip io_uring (fails on NixOS/WSL2)
+import tinygrad.runtime.ops_disk as _disk
+_disk.DiskDevice._tried_io_uring_init = True
+
 from tinygrad import Tensor, getenv
 import weave
 
 MODEL_URL = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q6_K.gguf"
+MODEL_CACHE = os.path.expanduser("~/.cache/tinygrad/downloads")
 DATA_DIR = "data/hidden_states/llama3.2-1b"
 CHECKPOINT_DIR = "checkpoints"
 
 def load_model():
-  """Load LLaMA 3.2 1B from GGUF."""
+  """Load LLaMA 3.2 1B from GGUF.
+
+  Downloads on first run, then loads from cache. Uses pathlib to avoid
+  tinygrad's io_uring disk backend which doesn't work on NixOS/WSL2.
+  """
+  import pathlib, hashlib
   from tinygrad.apps.llm import Transformer, SimpleTokenizer
-  print("Loading LLaMA 3.2 1B...")
-  model, kv = Transformer.from_gguf(Tensor.from_url(MODEL_URL), max_context=512, realize=True)
+
+  # Check if already downloaded
+  cache_key = hashlib.md5(MODEL_URL.encode()).hexdigest()
+  cache_path = pathlib.Path(MODEL_CACHE) / cache_key
+  if not cache_path.exists():
+    print(f"Downloading LLaMA 3.2 1B to {cache_path}...")
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    import urllib.request
+    urllib.request.urlretrieve(MODEL_URL, cache_path)
+
+  print(f"Loading LLaMA 3.2 1B from cache ({cache_path.stat().st_size / 1e6:.0f} MB)...")
+  model, kv = Transformer.from_gguf(Tensor(cache_path), max_context=512, realize=True)
   tok = SimpleTokenizer.from_gguf_kv(kv)
   print(f"Loaded: {len(model.blk)} layers, dim={model.blk[0].attn_q.weight.shape[1]}")
   return model, tok
