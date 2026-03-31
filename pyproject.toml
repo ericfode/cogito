@@ -1,0 +1,11 @@
+[project]
+name = "cogito"
+version = "0.1.0"
+description = "Non-linguistic reasoning in neural network latent space"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[tool.ruff]
+line-length = 100
